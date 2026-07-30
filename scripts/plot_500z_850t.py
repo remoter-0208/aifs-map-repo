@@ -105,12 +105,17 @@ def load(grib_path: Path):
 
 
 def plot(gh500, t850c, init_dt, step: int, domain: str, out_path: Path):
+    from datetime import timedelta
+
     lon_min, lon_max, lat_min, lat_max = DOMAINS[domain]
     cmap, norm = build_cmap()
 
     fig = plt.figure(figsize=(11, 8.5))
     ax = plt.axes(projection=ccrs.PlateCarree())
-    ax.set_extent([lon_min, lon_max, lat_min, lat_max], crs=ccrs.PlateCarree())
+    ax.set_extent(
+        [lon_min, lon_max, lat_min, lat_max],
+        crs=ccrs.PlateCarree(),
+    )
 
     # 850 hPa temperature
     cf = ax.contourf(
@@ -143,7 +148,7 @@ def plot(gh500, t850c, init_dt, step: int, domain: str, out_path: Path):
 
     ax.clabel(cs, fmt="%d", fontsize=8, inline=True)
 
-    # Map features
+    # Coastlines etc.
     ax.add_feature(cfeature.COASTLINE, linewidth=0.6)
     ax.add_feature(cfeature.BORDERS, linewidth=0.4)
 
@@ -157,30 +162,21 @@ def plot(gh500, t850c, init_dt, step: int, domain: str, out_path: Path):
     gl.right_labels = False
 
     # Valid time
-    from datetime import timedelta
-
     valid_dt = init_dt + timedelta(hours=step)
 
     # ===== Title =====
-    fig.text(
-        0.5,
-        0.975,
-        "AIFS-single 500Z + 850T",
-        ha="center",
-        va="top",
-        fontsize=17,
-        fontweight="bold",
-    )
-
-    fig.text(
-        0.5,
-        0.948,
+    title = (
+        "AIFS-single 500Z + 850T\n"
         f"Init: {init_dt:%Y-%m-%d %HUTC}    "
         f"FT={step:03d}h    "
-        f"Valid: {valid_dt:%Y-%m-%d %HUTC}",
-        ha="center",
-        va="top",
-        fontsize=12,
+        f"Valid: {valid_dt:%Y-%m-%d %HUTC}"
+    )
+
+    fig.suptitle(
+        title,
+        fontsize=15,
+        fontweight="bold",
+        y=0.97,
     )
 
     # Colorbar
@@ -195,13 +191,13 @@ def plot(gh500, t850c, init_dt, step: int, domain: str, out_path: Path):
 
     # Layout
     fig.subplots_adjust(
-        left=0.06,
-        right=0.94,
-        bottom=0.06,
-        top=0.90,
+        left=0.07,
+        right=0.93,
+        bottom=0.07,
+        top=0.88,
     )
 
-    fig.savefig(out_path, dpi=150, bbox_inches="tight")
+    fig.savefig(out_path, dpi=150)
     plt.close(fig)
 
     print(f"wrote {out_path}", file=sys.stderr)
