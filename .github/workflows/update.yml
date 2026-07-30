@@ -1,0 +1,74 @@
+name: Update AIFS-single 500Z/850T chart
+
+on:
+  schedule:
+    # AIFS-single cycles run at 00/06/12/18Z; open-data usually lands
+    # ~5-6h later. These times are UTC.
+    - cron: "20 6,12,18,0 * * *"
+  workflow_dispatch:
+    inputs:
+      steps:
+        description: "Forecast steps (hours), space separated"
+        required: false
+        default: "24 48 72 96 120 144 168 192 216 240"
+      domain:
+        description: "japan / japan_wide / global"
+        required: false
+        default: "japan"
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install system libs for cartopy
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgeos-dev libproj-dev proj-data proj-bin
+
+      - name: Install Python deps
+        run: pip install -r requirements.txt
+
+      - name: Fetch + plot
+        env:
+          STEPS: ${{ github.event.inputs.steps || '24 48 72 96 120 144 168 192 216 240' }}
+          DOMAIN: ${{ github.event.inputs.domain || 'japan' }}
+        run: |
+          python scripts/plot_500z_850t.py --steps $STEPS --domain $DOMAIN --out-dir docs/output
+
+      - name: Commit updated images
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "Auto-update AIFS-single chart"
+          file_pattern: "docs/output/*.png"
+
+      # --- Pages deployment (needed when Pages "Source" = GitHub Actions) ---
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload docs/ as Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
