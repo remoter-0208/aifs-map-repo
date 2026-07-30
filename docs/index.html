@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>AIFS-single 500hPa gh &amp; 850hPa T</title>
+<style>
+  body { font-family: sans-serif; background:#111; color:#eee; text-align:center; }
+  img { max-width: 95%; border: 1px solid #444; margin-top: 1em; }
+  select { font-size: 1rem; padding: 0.3em; }
+</style>
+</head>
+<body>
+  <h2>ECMWF AIFS-single: 500hPa gh &amp; 850hPa T (auto-updated)</h2>
+  <label for="step">Forecast hour:</label>
+  <select id="step" onchange="update()">
+    <option value="024">FT024</option>
+    <option value="048">FT048</option>
+    <option value="072">FT072</option>
+    <option value="096">FT096</option>
+    <option value="120">FT120</option>
+    <option value="144">FT144</option>
+    <option value="168">FT168</option>
+    <option value="192">FT192</option>
+    <option value="216">FT216</option>
+    <option value="240">FT240</option>
+  </select>
+  <div><img id="chart" src="output/latest_024.png" alt="chart"></div>
+  <script>
+    function update() {
+      const step = document.getElementById('step').value;
+      document.getElementById('chart').src = `output/latest_${step}.png?t=${Date.now()}`;
+    }
+  </script>
+</body>
+</html>
