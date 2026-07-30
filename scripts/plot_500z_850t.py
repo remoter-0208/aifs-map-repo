@@ -49,7 +49,7 @@ DOMAINS = {
 
 # 850 hPa temperature (degC) fill palette, tuned to resemble the
 # weather-models.info 850hPa T scale.
-T_LEVELS = np.arange(-32, 30, 4)  # -32 .. 28 step 4
+T_LEVELS = np.arange(-15, 30, 3)  # -32 .. 28 step 4
 T_COLORS = [
     "#ffffff", "#d9d9d9", "#bfbfbf", "#8fa6ff", "#4d79ff",  # -32..-12
     "#00b4ff", "#00e0c0", "#00c000", "#ffff00", "#ffb400",  # -8..12
@@ -112,43 +112,98 @@ def plot(gh500, t850c, init_dt, step: int, domain: str, out_path: Path):
     ax = plt.axes(projection=ccrs.PlateCarree())
     ax.set_extent([lon_min, lon_max, lat_min, lat_max], crs=ccrs.PlateCarree())
 
+    # 850 hPa temperature
     cf = ax.contourf(
-        t850c.longitude, t850c.latitude, t850c,
-        levels=T_LEVELS, cmap=cmap, norm=norm,
-        extend="both", transform=ccrs.PlateCarree(),
+        t850c.longitude,
+        t850c.latitude,
+        t850c,
+        levels=T_LEVELS,
+        cmap=cmap,
+        norm=norm,
+        extend="both",
+        transform=ccrs.PlateCarree(),
     )
 
+    # 500 hPa geopotential height
     z_levels = np.arange(
         np.floor(gh500.min().item() / Z_INTERVAL) * Z_INTERVAL,
         np.ceil(gh500.max().item() / Z_INTERVAL) * Z_INTERVAL + Z_INTERVAL,
         Z_INTERVAL,
     )
+
     cs = ax.contour(
-        gh500.longitude, gh500.latitude, gh500,
-        levels=z_levels, colors="black", linewidths=1.0,
+        gh500.longitude,
+        gh500.latitude,
+        gh500,
+        levels=z_levels,
+        colors="black",
+        linewidths=1.0,
         transform=ccrs.PlateCarree(),
     )
+
     ax.clabel(cs, fmt="%d", fontsize=8, inline=True)
 
+    # Map features
     ax.add_feature(cfeature.COASTLINE, linewidth=0.6)
     ax.add_feature(cfeature.BORDERS, linewidth=0.4)
-    gl = ax.gridlines(draw_labels=True, linewidth=0.3, color="gray", linestyle="--")
+
+    gl = ax.gridlines(
+        draw_labels=True,
+        linewidth=0.3,
+        color="gray",
+        linestyle="--",
+    )
     gl.top_labels = False
     gl.right_labels = False
 
-    valid_dt = init_dt + __import__("datetime").timedelta(hours=step)
-    ax.set_title(
-        f"ECMWF AIFS-single  Init: {init_dt:%Y-%m-%d %HZ}  "
-        f"FT{step:03d}h  Valid: {valid_dt:%m-%d %HZ}\n500hPa gh & 850hPa T",
-        fontsize=11,
+    # Valid time
+    from datetime import timedelta
+
+    valid_dt = init_dt + timedelta(hours=step)
+
+    # ===== Title =====
+    fig.text(
+        0.5,
+        0.975,
+        "AIFS-single 500Z + 850T",
+        ha="center",
+        va="top",
+        fontsize=17,
+        fontweight="bold",
     )
 
-    cbar = fig.colorbar(cf, ax=ax, orientation="vertical", pad=0.02, shrink=0.85)
-    cbar.set_label("850hPa T (\u00b0C)")
+    fig.text(
+        0.5,
+        0.948,
+        f"Init: {init_dt:%Y-%m-%d %HUTC}    "
+        f"FT={step:03d}h    "
+        f"Valid: {valid_dt:%Y-%m-%d %HUTC}",
+        ha="center",
+        va="top",
+        fontsize=12,
+    )
 
-    fig.subplots_adjust(left=0.06, right=0.94, top=0.90, bottom=0.06)
-    fig.savefig(out_path, dpi=150)
+    # Colorbar
+    cbar = fig.colorbar(
+        cf,
+        ax=ax,
+        orientation="vertical",
+        pad=0.02,
+        shrink=0.85,
+    )
+    cbar.set_label("850 hPa Temperature (°C)", fontsize=11)
+
+    # Layout
+    fig.subplots_adjust(
+        left=0.06,
+        right=0.94,
+        bottom=0.06,
+        top=0.90,
+    )
+
+    fig.savefig(out_path, dpi=150, bbox_inches="tight")
     plt.close(fig)
+
     print(f"wrote {out_path}", file=sys.stderr)
 
 
