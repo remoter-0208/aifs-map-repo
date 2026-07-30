@@ -146,8 +146,7 @@ def plot(gh500, t850c, init_dt, step: int, domain: str, out_path: Path):
     cbar = fig.colorbar(cf, ax=ax, orientation="vertical", pad=0.02, shrink=0.85)
     cbar.set_label("850hPa T (\u00b0C)")
 
-    fig.tight_layout()
-    fig.savefig(out_path, dpi=150)
+    fig.savefig(out_path, dpi=150, bbox_inches="tight")
     plt.close(fig)
     print(f"wrote {out_path}", file=sys.stderr)
 
