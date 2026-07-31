@@ -4,7 +4,7 @@ on:
   schedule:
     # AIFS-single cycles run at 00/06/12/18Z; open-data usually lands
     # ~5-6h later. These times are UTC.
-    - cron: "20 6,12,18,0 * * *"
+    - cron: "20 2,11,17,23 * * *"
   workflow_dispatch:
     inputs:
       steps:
