@@ -42,7 +42,9 @@ img{
 
 <body>
 
-<h2>ECMWF AIFS-single 500 hPa Geopotential Height & 850 hPa Temperature</h2>
+<h2>
+ECMWF AIFS-single 500 hPa Geopotential Height & 850 hPa Temperature
+</h2>
 
 <p>
 Automatically updated from the latest ECMWF AIFS-single forecast.
@@ -56,6 +58,7 @@ Automatically updated from the latest ECMWF AIFS-single forecast.
 <div>
     <img id="chart" src="" alt="Forecast Chart">
 </div>
+
 
 <script>
 
@@ -73,8 +76,10 @@ for(let ft=6; ft<=240; ft+=6){
     select.appendChild(option);
 }
 
-// 初期表示をFT006
+
+// 初期表示
 select.value = "006";
+
 
 function update(){
 
@@ -85,7 +90,89 @@ function update(){
 
 }
 
-// ページを開いたら最初の画像を表示
+
+// ================================
+// PC：左右矢印キー
+// ================================
+
+function changeStep(diff){
+
+    let index = select.selectedIndex + diff;
+
+    if(index < 0){
+        index = 0;
+    }
+
+    if(index >= select.options.length){
+        index = select.options.length - 1;
+    }
+
+    select.selectedIndex = index;
+    update();
+}
+
+
+document.addEventListener("keydown", function(e){
+
+    if(e.key === "ArrowLeft"){
+        e.preventDefault();
+        changeStep(-1);
+    }
+
+    if(e.key === "ArrowRight"){
+        e.preventDefault();
+        changeStep(1);
+    }
+
+});
+
+
+
+// ================================
+// スマホ：左右フリック
+// ================================
+
+let startX = 0;
+let startY = 0;
+
+
+document.addEventListener("touchstart", function(e){
+
+    startX = e.changedTouches[0].clientX;
+    startY = e.changedTouches[0].clientY;
+
+}, {passive:true});
+
+
+document.addEventListener("touchend", function(e){
+
+    const endX = e.changedTouches[0].clientX;
+    const endY = e.changedTouches[0].clientY;
+
+    const dx = endX - startX;
+    const dy = endY - startY;
+
+
+    // 横方向のみ反応
+    if(Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)){
+
+
+        if(dx < 0){
+            // 左フリック → 次の時刻
+            changeStep(1);
+        }
+        else{
+            // 右フリック → 前の時刻
+            changeStep(-1);
+        }
+
+    }
+
+}, {passive:true});
+
+
+
+// 初期画像表示
 update();
 
 </script>
