@@ -191,7 +191,7 @@ def load_tp(grib_path: Path):
         engine="cfgrib",
         backend_kwargs={"filter_by_keys": {"shortName": "tp"}},
     )
-    return ds["tp"] * 1000.0  # m -> mm
+    return ds["tp"]   # m -> mm
 
 
 # =======================================================================
