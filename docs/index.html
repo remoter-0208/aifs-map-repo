@@ -3,8 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ECMWF AIFS-single 500hPa Z & 850hPa T</title>
-
+<title>ECMWF AIFS-single Forecast Charts</title>
 <style>
 body{
     font-family: Arial, Helvetica, sans-serif;
@@ -14,22 +13,25 @@ body{
     margin:0;
     padding:20px;
 }
-
 h2{
     margin-bottom:20px;
 }
-
 label{
     font-size:1.1rem;
     margin-right:8px;
 }
-
 select{
     font-size:1rem;
     padding:6px 10px;
     margin-bottom:15px;
+    margin-right:20px;
 }
-
+.controls{
+    display:inline-flex;
+    align-items:center;
+    flex-wrap:wrap;
+    justify-content:center;
+}
 img{
     max-width:95%;
     height:auto;
@@ -37,145 +39,146 @@ img{
     box-shadow:0 0 10px rgba(0,0,0,0.5);
 }
 </style>
-
 </head>
-
 <body>
-
-<h2>
-ECMWF AIFS-single 500 hPa Geopotential Height & 850 hPa Temperature
+<h2 id="title">
+ECMWF AIFS-single Forecast Charts
 </h2>
-
 <p>
 Automatically updated from the latest ECMWF AIFS-single forecast.
 </p>
+<div class="controls">
+    <label for="param">Parameter:</label>
+    <select id="param" onchange="update()"></select>
 
-<label for="step">Forecast Hour:</label>
-
-<select id="step" onchange="update()">
-</select>
-
+    <label for="step">Forecast Hour:</label>
+    <select id="step" onchange="update()"></select>
+</div>
 <div>
     <img id="chart" src="" alt="Forecast Chart">
 </div>
-
-
 <script>
+// ================================
+// パラメータ定義（上下キー / 上下フリックで切替）
+// ================================
+const PARAMS = [
+    { value: "500z850t",    label: "500hPa Z + 850hPa T", prefix: "latest_",              title: "500 hPa Geopotential Height & 850 hPa Temperature" },
+    { value: "t2m",          label: "2m Temperature",       prefix: "latest_t2m_",          title: "2m Temperature" },
+    { value: "mslp_precip",  label: "MSLP + 6h Precip",     prefix: "latest_mslp_precip_",  title: "Mean Sea Level Pressure & 6-hour Precipitation" },
+];
 
-const select = document.getElementById("step");
+const paramSelect = document.getElementById("param");
+PARAMS.forEach(p => {
+    const option = document.createElement("option");
+    option.value = p.value;
+    option.textContent = p.label;
+    paramSelect.appendChild(option);
+});
+paramSelect.value = "500z850t";
 
+// ================================
+// 予報時刻定義（左右キー / 左右フリックで切替）
+// ================================
+const stepSelect = document.getElementById("step");
 // FT006～FT240 を6時間間隔で生成
 for(let ft=6; ft<=240; ft+=6){
-
     const hh = String(ft).padStart(3,"0");
-
     const option = document.createElement("option");
     option.value = hh;
     option.textContent = `FT${hh}`;
-
-    select.appendChild(option);
+    stepSelect.appendChild(option);
 }
+stepSelect.value = "006";
 
-
-// 初期表示
-select.value = "006";
-
+function currentParam(){
+    return PARAMS.find(p => p.value === paramSelect.value);
+}
 
 function update(){
-
-    const step = select.value;
-
+    const step = stepSelect.value;
+    const param = currentParam();
+    document.getElementById("title").textContent =
+        `ECMWF AIFS-single ${param.title}`;
     document.getElementById("chart").src =
-        `output/latest_${step}.png?t=${Date.now()}`;
-
+        `output/${param.prefix}${step}.png?t=${Date.now()}`;
 }
 
-
 // ================================
-// PC：左右矢印キー
+// PC：左右矢印キー = 予報時刻、上下矢印キー = パラメータ
 // ================================
-
 function changeStep(diff){
-
-    let index = select.selectedIndex + diff;
-
-    if(index < 0){
-        index = 0;
-    }
-
-    if(index >= select.options.length){
-        index = select.options.length - 1;
-    }
-
-    select.selectedIndex = index;
+    let index = stepSelect.selectedIndex + diff;
+    if(index < 0) index = 0;
+    if(index >= stepSelect.options.length) index = stepSelect.options.length - 1;
+    stepSelect.selectedIndex = index;
     update();
 }
 
+function changeParam(diff){
+    let index = paramSelect.selectedIndex + diff;
+    if(index < 0) index = 0;
+    if(index >= paramSelect.options.length) index = paramSelect.options.length - 1;
+    paramSelect.selectedIndex = index;
+    update();
+}
 
 document.addEventListener("keydown", function(e){
-
     if(e.key === "ArrowLeft"){
         e.preventDefault();
         changeStep(-1);
     }
-
     if(e.key === "ArrowRight"){
         e.preventDefault();
         changeStep(1);
     }
-
+    if(e.key === "ArrowUp"){
+        e.preventDefault();
+        changeParam(-1);
+    }
+    if(e.key === "ArrowDown"){
+        e.preventDefault();
+        changeParam(1);
+    }
 });
 
-
-
 // ================================
-// スマホ：左右フリック
+// スマホ：左右フリック = 予報時刻、上下フリック = パラメータ
 // ================================
-
 let startX = 0;
 let startY = 0;
-
-
 document.addEventListener("touchstart", function(e){
-
     startX = e.changedTouches[0].clientX;
     startY = e.changedTouches[0].clientY;
-
 }, {passive:true});
-
-
 document.addEventListener("touchend", function(e){
-
     const endX = e.changedTouches[0].clientX;
     const endY = e.changedTouches[0].clientY;
-
     const dx = endX - startX;
     const dy = endY - startY;
 
-
-    // 横方向のみ反応
-    if(Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)){
-
-
-        if(dx < 0){
-            // 左フリック → 次の時刻
-            changeStep(1);
+    if(Math.abs(dx) > Math.abs(dy)){
+        // 横方向優勢 → 予報時刻切替
+        if(Math.abs(dx) > 50){
+            if(dx < 0){
+                changeStep(1);   // 左フリック → 次の時刻
+            } else {
+                changeStep(-1);  // 右フリック → 前の時刻
+            }
         }
-        else{
-            // 右フリック → 前の時刻
-            changeStep(-1);
+    } else {
+        // 縦方向優勢 → パラメータ切替
+        if(Math.abs(dy) > 50){
+            if(dy < 0){
+                changeParam(1);   // 上フリック → 次のパラメータ
+            } else {
+                changeParam(-1);  // 下フリック → 前のパラメータ
+            }
         }
-
     }
-
 }, {passive:true});
-
-
 
 // 初期画像表示
 update();
-
 </script>
-
 </body>
 </html>
